@@ -1,0 +1,18 @@
+# Regenerates the vendored protobuf-es bindings the PLUGIN ITSELF depends on
+# (the buf.validate extension symbols + rule message descriptors).
+#
+# Run rarely, only when bumping the protovalidate dependency:
+#   buf generate --template buf.gen.vendor.yaml
+#
+# The output (src/gen/buf/validate/validate_pb.ts) is committed and must NOT be
+# wiped by the normal `buf generate`, because src/run.ts imports it at runtime.
+version: v2
+plugins:
+  - local: protoc-gen-es
+    out: src/gen
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=js
+inputs:
+  - module: buf.build/bufbuild/protovalidate

@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "buf/validate/validate.proto";
+
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_RED = 1;
+  COLOR_GREEN = 2;
+  COLOR_BLUE = 3;
+}
+
+// Battery exercises a broad cross-section of scalar types and standard rules.
+// Every field is given a rule so the oracle test can mutate each in turn.
+message Battery {
+  // --- numeric ---
+  int32 i32 = 1 [(buf.validate.field).int32 = {gte: 1, lte: 100}];
+  int64 i64 = 2 [(buf.validate.field).int64 = {gt: 0}];
+  uint32 u32 = 3 [(buf.validate.field).uint32 = {lte: 10}];
+  uint64 u64 = 4 [(buf.validate.field).uint64 = {gte: 0}];
+  sint32 s32 = 5 [(buf.validate.field).sint32 = {gte: 5, lte: 9}];
+  double dbl = 6 [(buf.validate.field).double = {gt: 0, finite: true}];
+  float flt = 7 [(buf.validate.field).float = {lte: 1}];
+  int32 ranked = 8 [(buf.validate.field).int32.lt = 1000];
+
+  // --- string formats / lengths ---
+  string email = 10 [(buf.validate.field).string.email = true];
+  string uuid = 11 [(buf.validate.field).string.uuid = true];
+  string url = 12 [(buf.validate.field).string.uri = true];
+  string v4 = 13 [(buf.validate.field).string.ipv4 = true];
+  string v6 = 14 [(buf.validate.field).string.ipv6 = true];
+  string sized = 15 [(buf.validate.field).string = {min_len: 2, max_len: 5}];
+  string exact = 16 [(buf.validate.field).string.len = 4];
+  string pat = 17 [(buf.validate.field).string.pattern = "^[A-Z]+$"];
+  string pref = 18 [(buf.validate.field).string.prefix = "go-"];
+  string suf = 19 [(buf.validate.field).string.suffix = "-end"];
+  string has = 20 [(buf.validate.field).string.contains = "mid"];
+
+  // --- bool / bytes / enum ---
+  bool agreed = 30 [(buf.validate.field).bool.const = true];
+  bool active = 33; // no rule -> plain z.boolean()
+  bytes blob = 31 [(buf.validate.field).bytes = {min_len: 1, max_len: 8}];
+  Color color = 32 [(buf.validate.field).enum.defined_only = true];
+
+  // --- collections ---
+  repeated string tags = 40 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 3
+    unique: true
+    items: {string: {min_len: 1}}
+  }];
+  map<string, int32> counts = 41 [(buf.validate.field).map = {
+    min_pairs: 1
+    values: {int32: {gte: 0}}
+  }];
+
+  // --- presence ---
+  optional string nickname = 50 [(buf.validate.field).string.min_len = 2];
+}
+
+// Contact demonstrates a required oneof.
+message Contact {
+  oneof channel {
+    option (buf.validate.oneof).required = true;
+    string email = 1 [(buf.validate.field).string.email = true];
+    string phone = 2 [(buf.validate.field).string.min_len = 7];
+  }
+  string label = 3;
+}
+
+// Bounds isolates 64-bit integer fields so both int64 representations
+// (bigint and string/JSON) can be oracle-tested without bytes/enum noise.
+message Bounds {
+  int64 lo = 1 [(buf.validate.field).int64 = {gte: 0}];
+  int64 hi = 2 [(buf.validate.field).int64 = {lte: 1000}];
+}
+
+// Tree is a self-recursive message (exercises z.lazy).
+message Tree {
+  string value = 1 [(buf.validate.field).string.min_len = 1];
+  repeated Tree children = 2;
+}

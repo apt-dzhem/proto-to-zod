@@ -1,0 +1,37 @@
+# Normal generation: protobuf-es message types + Zod schemas for the example
+# protos. Output goes to gen/ (cleaned each run). The plugin's own vendored
+# dependency lives in src/gen and is regenerated separately (buf.gen.vendor.yaml).
+version: v2
+clean: true
+plugins:
+  # 1. protobuf-es message types (User, Address, Role, ...).
+  - local: protoc-gen-es
+    out: gen
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=js
+
+  # 2. Our Zod schemas. Run in dev directly from TypeScript via tsx.
+  - local: ["npx", "tsx", "src/run.ts"]
+    out: gen
+    strategy: all
+    opt:
+      - target=ts
+      - import_extension=js
+
+  # 3. Same schemas in JSON-shape mode (int64 as string) for testing that mode,
+  #    with matching protobuf-es types alongside.
+  - local: protoc-gen-es
+    out: gen-json
+    include_imports: true
+    opt:
+      - target=ts
+      - import_extension=js
+  - local: ["npx", "tsx", "src/run.ts"]
+    out: gen-json
+    strategy: all
+    opt:
+      - target=ts
+      - import_extension=js
+      - int64=string

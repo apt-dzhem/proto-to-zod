@@ -1,0 +1,40 @@
+{
+  "name": "protoc-gen-zod",
+  "version": "0.1.0",
+  "description": "Generate Zod v4 validation schemas from Protobuf, including protovalidate (buf.validate) field rules.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "protoc-gen-zod": "./bin/protoc-gen-zod.js"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "generate": "buf generate",
+    "vendor": "buf generate --template buf.gen.vendor.yaml",
+    "pretest": "buf generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.9.0",
+    "@bufbuild/protoplugin": "^2.9.0",
+    "@bufbuild/protovalidate": "^1.0.0"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.59.0",
+    "@bufbuild/protoc-gen-es": "^2.9.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0",
+    "zod": "^4.0.0"
+  }
+}

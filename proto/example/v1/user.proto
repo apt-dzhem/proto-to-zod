@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "buf/validate/validate.proto";
+
+// Role enumerates the access level of a user.
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_ADMIN = 1;
+  ROLE_MEMBER = 2;
+}
+
+// Address is a nested message demonstrating cross-message references.
+message Address {
+  string street = 1 [(buf.validate.field).string.min_len = 1];
+  string country = 2 [(buf.validate.field).string.len = 2];
+}
+
+// User exercises a broad cross-section of scalar, collection and rule features.
+message User {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+  string email = 2 [
+    (buf.validate.field).string.email = true,
+    (buf.validate.field).required = true
+  ];
+  string username = 3 [(buf.validate.field).string = {
+    min_len: 3
+    max_len: 32
+    pattern: "^[a-z0-9_]+$"
+  }];
+  int32 age = 4 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 130
+  }];
+  Role role = 5 [(buf.validate.field).enum.defined_only = true];
+  repeated string tags = 6 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 10
+    unique: true
+    items: {
+      string: {min_len: 1}
+    }
+  }];
+  map<string, int32> scores = 7 [(buf.validate.field).map = {
+    keys: {
+      string: {min_len: 1}
+    }
+    values: {
+      int32: {
+        gte: 0
+        lte: 100
+      }
+    }
+  }];
+  optional Address address = 8;
+}
+
+// DateRange demonstrates a message-level CEL (cross-field) rule.
+message DateRange {
+  option (buf.validate.message).cel = {
+    id: "start_before_end"
+    message: "start must be before end"
+    expression: "this.start <= this.end"
+  };
+  int64 start = 1;
+  int64 end = 2;
+}
