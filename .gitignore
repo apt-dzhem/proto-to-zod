@@ -12,4 +12,6 @@ coverage/
 # NOTE: src/gen is the vendored plugin dependency and IS committed.
 /gen/
 /gen-json/
+/gen-exact/
+/gen-partial/
 smoke.mts

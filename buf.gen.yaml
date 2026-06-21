@@ -35,3 +35,29 @@ plugins:
       - target=ts
       - import_extension=js
       - int64=string
+
+  # 4. presence=exact mode (z.exactOptional) for testing.
+  - local: protoc-gen-es
+    out: gen-exact
+    include_imports: true
+    opt: [target=ts, import_extension=js]
+  - local: ["npx", "tsx", "src/run.ts"]
+    out: gen-exact
+    strategy: all
+    opt:
+      - target=ts
+      - import_extension=js
+      - presence=exact
+
+  # 5. partial=true mode (.partial() for all-optional messages) for testing.
+  - local: protoc-gen-es
+    out: gen-partial
+    include_imports: true
+    opt: [target=ts, import_extension=js]
+  - local: ["npx", "tsx", "src/run.ts"]
+    out: gen-partial
+    strategy: all
+    opt:
+      - target=ts
+      - import_extension=js
+      - partial=true

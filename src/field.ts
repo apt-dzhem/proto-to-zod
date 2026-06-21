@@ -202,18 +202,34 @@ export function fieldExpr(ctx: GenCtx, field: DescField, suppressOptional = fals
     expr = applyTypedRules(expr, rules, ctx);
   }
 
-  // Presence -> optional. Lists and maps are always present.
-  if (!suppressOptional && field.fieldKind !== "list" && field.fieldKind !== "map") {
-    const tracksPresence =
-      field.presence === FeatureSet_FieldPresence.EXPLICIT ||
-      field.presence === FeatureSet_FieldPresence.LEGACY_REQUIRED;
-    const required = rules?.required === true || field.presence === FeatureSet_FieldPresence.LEGACY_REQUIRED;
-    if (tracksPresence && !required) {
-      expr = expr.optional();
-    }
+  // Presence -> optional. Lists and maps are always present. `suppressOptional`
+  // is used by oneof members and by the all-optional .partial() optimization.
+  if (!suppressOptional && fieldIsOptional(field)) {
+    expr =
+      ctx.opts.presence === "exact"
+        ? ZodExpr.raw(ctx.z, ".exactOptional(", ...expr.toParts(), ")")
+        : expr.optional();
   }
 
   return expr;
+}
+
+/**
+ * Whether a field is optional (tracks presence and is not required). Lists and
+ * maps are always present. Shared by field emission and the all-optional
+ * `.partial()` detection.
+ */
+export function fieldIsOptional(field: DescField): boolean {
+  if (field.fieldKind === "list" || field.fieldKind === "map") return false;
+  const rules: FieldRules | undefined = field.proto.options
+    ? getOption(field, fieldRulesExt)
+    : undefined;
+  const tracksPresence =
+    field.presence === FeatureSet_FieldPresence.EXPLICIT ||
+    field.presence === FeatureSet_FieldPresence.LEGACY_REQUIRED;
+  const required =
+    rules?.required === true || field.presence === FeatureSet_FieldPresence.LEGACY_REQUIRED;
+  return tracksPresence && !required;
 }
 
 function mapKeyExpr(ctx: GenCtx, field: Extract<DescField, { fieldKind: "map" }>, nested: FieldRules | undefined): ZodExpr {

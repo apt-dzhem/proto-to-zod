@@ -10,6 +10,8 @@ export type TimestampMode = "date" | "string";
 export type EnumMode = "native" | "stringliteral";
 /** Strategy for CEL expressions that cannot be reduced to a static Zod chain. */
 export type CelMode = "comment" | "skip";
+/** How presence-tracking (optional) fields are emitted. */
+export type PresenceMode = "optional" | "exact";
 
 export interface ZodPluginOptions {
   /** Default: "bigint". */
@@ -22,6 +24,19 @@ export interface ZodPluginOptions {
   enums: EnumMode;
   /** Default: "comment". */
   cel: CelMode;
+  /**
+   * How optional (presence-tracking) fields are emitted. Default: "optional"
+   * (`schema.optional()`, accepts explicit `undefined` — matches protobuf-es
+   * objects). "exact" emits `z.exactOptional(schema)` (key may be absent but, if
+   * present, must be defined — matches proto3 JSON, where unset = absent key).
+   */
+  presence: PresenceMode;
+  /**
+   * When true, a message whose fields are ALL optional is emitted as
+   * `z.object({...}).partial()` instead of repeating `.optional()` per field.
+   * Only applies in `presence=optional` mode. Default: false.
+   */
+  partial: boolean;
   /** Emit `satisfies z.ZodType<Shape>` against the protobuf-es message shape. Default: true. */
   typeAlign: boolean;
   /** Import specifier for zod. Default: "zod". */
@@ -34,6 +49,8 @@ export const defaultOptions: ZodPluginOptions = {
   timestamp: "date",
   enums: "native",
   cel: "comment",
+  presence: "optional",
+  partial: false,
   typeAlign: true,
   zodImport: "zod",
 };
@@ -81,6 +98,12 @@ export function parseZodOptions(
         break;
       case "cel":
         opts.cel = parseEnum(key, value, ["comment", "skip"] as const);
+        break;
+      case "presence":
+        opts.presence = parseEnum(key, value, ["optional", "exact"] as const);
+        break;
+      case "partial":
+        opts.partial = parseBool(key, value);
         break;
       case "type_align":
         opts.typeAlign = parseBool(key, value);

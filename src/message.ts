@@ -4,7 +4,7 @@ import { getOption } from "@bufbuild/protobuf";
 import type { DescMessage, DescEnum, DescOneof } from "@bufbuild/protobuf";
 import type { Printable } from "@bufbuild/protoplugin";
 import type { GenCtx } from "./context.js";
-import { fieldExpr, enumValueSymbol } from "./field.js";
+import { fieldExpr, enumValueSymbol, fieldIsOptional } from "./field.js";
 import { ZodExpr } from "./zexpr.js";
 import { transpileCel } from "./cel.js";
 import {
@@ -48,13 +48,22 @@ export function generateMessage(ctx: GenCtx, desc: DescMessage): void {
     }
   }
 
+  // `.partial()` optimization: when every field is optional (and there are no
+  // oneofs), drop the per-field `.optional()` and append `.partial()` once.
+  // Only valid in optional-presence mode.
+  const usePartial =
+    ctx.opts.partial &&
+    ctx.opts.presence === "optional" &&
+    desc.members.length > 0 &&
+    desc.members.every((m) => m.kind !== "oneof" && fieldIsOptional(m));
+
   f.print(f.export("const", `${desc.name}Schema`), " = ", z, ".object({");
   for (const member of desc.members) {
     if (member.kind === "oneof") {
       emitOneof(ctx, member);
     } else {
       ctx.lazyTracker.used = false;
-      const expr = fieldExpr(ctx, member);
+      const expr = fieldExpr(ctx, member, /* suppressOptional */ usePartial);
       if (ctx.lazyTracker.used) {
         // Recursive/forward reference -> getter so it resolves lazily while
         // keeping full type inference.
@@ -64,11 +73,12 @@ export function generateMessage(ctx: GenCtx, desc: DescMessage): void {
       }
     }
   }
-  // Close object, then chain refinements.
+  // Close object, then chain `.partial()` and refinements.
+  const tail = usePartial ? "}).partial()" : "})";
   if (superRefines.length === 0) {
-    f.print("});");
+    f.print(`${tail};`);
   } else {
-    f.print("})");
+    f.print(tail);
     superRefines.forEach((sr, i) => {
       const last = i === superRefines.length - 1;
       f.print("  .superRefine((v, ctx) => {");

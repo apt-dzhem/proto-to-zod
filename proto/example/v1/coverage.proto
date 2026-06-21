@@ -76,6 +76,14 @@ message Bounds {
   int64 hi = 2 [(buf.validate.field).int64 = {lte: 1000}];
 }
 
+// Profile has only optional fields, exercising presence=exact and the
+// partial=true (.partial()) optimization.
+message Profile {
+  optional string display_name = 1 [(buf.validate.field).string.min_len = 1];
+  optional int32 birth_year = 2 [(buf.validate.field).int32.gte = 1900];
+  optional string bio = 3;
+}
+
 // Tree is a self-recursive message (exercises z.lazy).
 message Tree {
   string value = 1 [(buf.validate.field).string.min_len = 1];

@@ -69,6 +69,8 @@ The `*_zod.ts` files are emitted next to protobuf-es' `*_pb.ts`.
 | `timestamp` | `date` \| `string` | `date` | `google.protobuf.Timestamp` mapping. |
 | `enums` | `native` \| `stringliteral` | `native` | `z.enum(NativeEnum)` vs. `z.enum([...names])`. |
 | `cel` | `comment` \| `skip` | `comment` | Fallback for CEL that can't be statically translated. |
+| `presence` | `optional` \| `exact` | `optional` | `schema.optional()` (accepts explicit `undefined`, matches protobuf-es objects) vs. `z.exactOptional(schema)` (key absent or defined — matches proto3 JSON). |
+| `partial` | `true` \| `false` | `false` | When a message's fields are **all** optional, emit `z.object({...}).partial()` instead of per-field `.optional()`. Optional-presence mode only. |
 | `zod_import` | any specifier | `zod` | Import source for `z` (e.g. `zod/mini`). |
 
 ## What it maps
